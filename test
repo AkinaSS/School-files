@@ -1,0 +1,24 @@
+{"source":"from-other"}
+#include <stdio.h>
+#include <string.h>
+
+int main () {
+    printf("hello C\n");
+    int a = 0;
+    printf("enter a number\n");
+    scanf("%d", &a);
+    int b = 7;
+    int c = add(a,b);
+    printf("the sum is %d\n", c);
+    return 0;
+}
+
+int main() {
+    int a = 0;
+    int ar[10];
+    char str1[] = "abcd";
+    printf (" sizeof = %ld\n", sizeof(ar)/sizeof(ar[0]));
+    printf ("strlen %ld\n", sizeof(ar)/sizeof(ar[0]));
+    int b = 7;
+    int c = add(a,b);
+}
