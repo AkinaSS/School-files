@@ -1,15 +1,14 @@
 import pandas as pd 
 import numpy as np
 import matplotlib.pyplot as plt
-
 import tensorflow as tf
 from tensorflow import keras
+import joblib
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.utils import class_weight
 
 df = pd.read_csv('data/healthcare-dataset-stroke-data.csv')
-
-from sklearn.preprocessing import LabelEncoder
-import joblib
 
 le_gender = LabelEncoder()
 df['gender_encoded'] = le_gender.fit_transform(df['gender'])
@@ -33,8 +32,8 @@ joblib.dump(le_work_type, 'le_work_type.pkl')
 joblib.dump(le_Residence_type, 'le_Residence_type.pkl')
 joblib.dump(le_smoking_status, 'le_smoking_status.pkl')
 
-df.head()
-df.dtypes
+print(df.head())
+print(df.dtypes)
 # check for null values
 print("Null values in each column:")
 df.isnull().sum()
@@ -43,7 +42,7 @@ df = df.fillna(df['bmi'].mean())
 
 #check again for null values
 df.isnull().sum()
-df.head()
+print(df.head())
 
 df = df.drop(columns=['id', 'gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status'])
 
@@ -51,12 +50,17 @@ df = df.drop(columns=['id', 'gender', 'ever_married', 'work_type', 'Residence_ty
 df.head()
 
 # split the data into test and train sets
-from sklearn.model_selection import train_test_split
-
 X = df.drop(columns=['stroke'])
 y = df['stroke']
 
 x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+class_weights = class_weight.compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(y_train),
+    y=y_train
+)
+class_weight_dict = {0: class_weights[0], 1: class_weights[1]}
 
 model = tf.keras.Sequential([
     tf.keras.layers.Dense(16, activation='relu'),
@@ -74,7 +78,8 @@ losses = model.fit(
     batch_size=16,
     epochs=25,
     validation_split=0.2,
-    callbacks=[callback]
+    callbacks=[callback],
+    class_weight=class_weight_dict
 )
 
 # filepath: /Users/torstenspieler/Desktop/Python/neural_networks/project/project.ipynb
@@ -89,5 +94,22 @@ plt.legend()
 plt.show()
 
 # save the model
-
 model.save('stroke_model.keras')
+
+# Evaluate the model on the test set
+test_loss, test_acc = model.evaluate(x_test, y_test)
+print(f"Test Loss: {test_loss:.4f}")
+print(f"Test Accuracy: {test_acc:.4f}")
+
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+
+y_pred = (model.predict(x_test) > 0.5).astype("int32")
+cm = confusion_matrix(y_test, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+disp.plot()
+plt.title("Confusion Matrix")
+#plt.show()
+
+from sklearn.metrics import classification_report
+
+print(classification_report(y_test, y_pred))
